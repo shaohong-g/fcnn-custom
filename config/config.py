@@ -49,8 +49,8 @@ class config():
 
 
     # Training
-    num_epochs = 2
-    epoch_length = 10 # number of images (batch size) # 32892 6235 231
+    num_epochs = 5
+    epoch_length = 20 # number of images (batch size) # 32892 6235 231
     nms_max_ROIs = 500 # Maximum number of region of interest (will be further diminish to num_rois)
     nms_overlap_thresh = 0.9 # Objects which have above said threshold to be removed to avoid choosing the same object for non_max_suppression
     classifier_regr_std = [8.0, 8.0, 4.0, 4.0] # [8.0, 8.0, 4.0, 4.0] 

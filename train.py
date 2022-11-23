@@ -51,7 +51,7 @@ def train(C, save_dir = None, logger= None):
 
     # Setup for training
     training_data = get_data(train_file)
-    training_data = training_data[:100]
+    training_data = training_data[:200]
     classes = C.classes
 
     # Model
@@ -242,15 +242,9 @@ if __name__ == "__main__":
     parser.add_argument('--resume', action='store_true', help='Resume training as per name')
     parser.add_argument('--name', type=str, default='exp', help='Experiment name')
     parser.add_argument('--device', type=int, default='-1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu (-1)')
+    parser.add_argument('--epoch_length', type=int, help='AKA batch size')
+    parser.add_argument('--num_epochs', type=int, help='Number of epoches')
     parser.add_argument('--logfile', type=str, default='train.log', help='Log file')
-
-    # parser.add_argument('--download', action='store_true', help='Action: Download dataset')
-    # parser.add_argument('--process', action='store_true', help='Action: Process Dataset to suit model criteria')
-    # parser.add_argument('--save-dir', type=str, default = os.path.join(os.path.dirname(os.path.realpath(__file__)), "dataset"),  help='Parent directory of where the dataset is saved (relative to cwd)')
-    # parser.add_argument('--dataset', type=str, default='coco-2017', help='dataset to be downloaded/processed, check fiftyone api for more details') # open-images-v6, coco-2017
-    # parser.add_argument('--classes', required= True, nargs='+', type=str, help='classes to be downloaded/processed. For e.g. [motorcycle, car, truck]')
-    # parser.add_argument('--splits', default=['train', 'validation', 'test'], nargs='+', type=str, help='split to be downloaded/processed. For e.g. [train, validation, test]')
-
     opt = parser.parse_args()
 
     # Create save_dir
@@ -267,36 +261,21 @@ if __name__ == "__main__":
 
     # GPU/CPU (up to 4 gpus)
     assert opt.device in [-1,0,1,2,3], "Please check device argument. Valid values: [-1,0,1,2,3]"
-
-    # if C.GPU:
-    #     gpus = tf.config.list_physical_devices('GPU')
-    #     if gpus:
-    #         # Currently, memory growth needs to be the same across GPUs
-    #         for gpu in gpus:
-    #             tf.config.experimental.set_memory_growth(gpu, True)
-    #         logical_gpus = tf.config.list_logical_devices('GPU')
-    #         print("Using GPU:", len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    #     else:
-    #         raise Exception("No GPU Available!")
-    # else:
-    #     os.environ['CUDA_VISIBLE_DEVICES'] = '-1' # Use CPU
-    #     logger.info("Using CPU")
+    
     try:
         if opt.device != -1:
             gpus= tf.config.list_physical_devices('GPU')
             gpu = gpus[opt.device]
             logger.info(f"using GPU {opt.device}- {gpu}")
 
-            tf.config.experimental.set_visible_devices(gpu, 'GPU')
             tf.config.experimental.set_memory_growth(gpu, True)
             device = f"/GPU:{opt.device}"
-            logger.info(tf.config.list_physical_devices('GPU'))
         else:
             device = "/CPU:0"
             logger.info("Using /CPU:0")
-        # with tf.device('/device:GPU:2'):
         
-        # with tf.device(device):
-        #     train(C, save_dir = save_dir, logger= logger)
+        with tf.device(device):
+            train(C, save_dir = save_dir, logger= logger)
+
     except Exception as e:
         logger.info(traceback.format_exc())
