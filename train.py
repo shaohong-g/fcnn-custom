@@ -85,7 +85,7 @@ def train(C, save_dir = None, logger= None):
     with std_out_err_redirect_tqdm( logger ) as outputstream:
         for i in range(num_epochs):
             data_gen_train = data_generator(training_data, C) # Generator for training data
-            pbar = tqdm(total=epoch_length, unit='images', file=outputstream, dynamic_ncols=True)
+            pbar = tqdm(total=epoch_length, unit='images', file=outputstream, dynamic_ncols=True) #, position=0, leave=True
             losses = np.zeros((epoch_length, 5)) # 4 losses and 1 accuracy for each epoch
             rpn_accuracy_rpn_monitor = [] # number of positive samples per image per batch
             save_record.append({"epoch": i+1, "train": []})
@@ -176,8 +176,8 @@ def train(C, save_dir = None, logger= None):
                     
                     if best_loss > curr_loss:
                         best_loss = curr_loss
-                        save_or_load_model(model_all, best_loss_folder, "bestloss.h5", ["bestrpnoptimizer.npy", "bestdectectoroptimizer.npy"], state = "save", optimizer = None)
-                    save_or_load_model(model_all, last_loss_folder, "lastloss.h5", ["lastrpnoptimizer.npy", "lastdectectoroptimizer.npy"], state = "save", optimizer = None)
+                        save_or_load_model([model_rpn, model_classifier, model_all], best_loss_folder, "bestloss.h5", ["bestrpnoptimizer.npy", "bestdectectoroptimizer.npy"], state = "save", optimizer = None)
+                    save_or_load_model([model_rpn, model_classifier, model_all], last_loss_folder, "lastloss.h5", ["lastrpnoptimizer.npy", "lastdectectoroptimizer.npy"], state = "save", optimizer = None)
 
                     # save batch data
                     batch_data = {
@@ -192,8 +192,8 @@ def train(C, save_dir = None, logger= None):
                         "Elapsed_time": f"{time.time() - start_batch:.2f}"
                     }
                     save_record[-1]["train"].append(batch_data)
-                    save_record[-1]["rpn_accuracy_for_epoch"] = rpn_accuracy_for_epoch
-                    save_record[-1]["losses_for_epoch"] = losses_for_epoch
+                    # save_record[-1]["rpn_accuracy_for_epoch"] = rpn_accuracy_for_epoch
+                    # save_record[-1]["losses_for_epoch"] = losses_for_epoch
                     save_record[-1]["best_loss"] = best_loss
 
                     save_results(C, [i, train_step, best_loss],save_record, os.path.join(save_dir, "hyp.json"), os.path.join(save_dir, "results.json"))
@@ -282,6 +282,21 @@ if __name__ == "__main__":
     #     os.environ['CUDA_VISIBLE_DEVICES'] = '-1' # Use CPU
     #     logger.info("Using CPU")
     try:
-        train(C, save_dir = save_dir, logger= logger)
+        if opt.device != -1:
+            gpus= tf.config.list_physical_devices('GPU')
+            gpu = gpus[opt.device]
+            logger.info(f"using GPU {opt.device}- {gpu}")
+
+            tf.config.set_visible_devices(gpu, 'GPU')
+            tf.config.experimental.set_memory_growth(gpu, True)
+            device = "/CPU:0"
+            logger.info(tf.config.list_physical_devices('GPU'))
+        else:
+            device = "/CPU:0"
+            logger.info("Using /CPU:0")
+        # with tf.device('/device:GPU:2'):
+        
+        # with tf.device(device):
+        #     train(C, save_dir = save_dir, logger= logger)
     except Exception as e:
         logger.info(traceback.format_exc())
