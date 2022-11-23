@@ -1,0 +1,2 @@
+python utilis/dataset.py --download --dataset coco-2017 --classes motorcycle car truck --splits train --max-samples 10000 --save-dir ./dataset &&
+python utilis/dataset.py --download --dataset coco-2017 --classes motorcycle car truck --splits validation test --max-samples 3000 --save-dir ./dataset
