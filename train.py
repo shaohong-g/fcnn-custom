@@ -51,7 +51,6 @@ def train(C, save_dir = None, logger= None):
 
     # Setup for training
     training_data = get_data(train_file)
-    training_data = training_data[:200]
     classes = C.classes
 
     # Model
@@ -176,8 +175,8 @@ def train(C, save_dir = None, logger= None):
                     
                     if best_loss > curr_loss:
                         best_loss = curr_loss
-                        save_or_load_model([model_rpn, model_classifier, model_all], best_loss_folder, "bestloss.h5", ["bestrpnoptimizer.npy", "bestdectectoroptimizer.npy"], state = "save", optimizer = None)
-                    save_or_load_model([model_rpn, model_classifier, model_all], last_loss_folder, "lastloss.h5", ["lastrpnoptimizer.npy", "lastdectectoroptimizer.npy"], state = "save", optimizer = None)
+                        save_or_load_model([model_rpn, model_classifier, model_all], best_loss_folder, "model.h5", ["rpn_optimizer.npy", "classifier_optimizer.npy"], state = "save", optimizer = None)
+                    save_or_load_model([model_rpn, model_classifier, model_all], last_loss_folder, "model.h5", ["rpn_optimizer.npy", "classifier_optimizer.npy"], state = "save", optimizer = None)
 
                     # save batch data
                     batch_data = {
@@ -266,10 +265,13 @@ if __name__ == "__main__":
         if opt.device != -1:
             gpus= tf.config.list_physical_devices('GPU')
             gpu = gpus[opt.device]
+            tf.config.experimental.set_memory_growth(gpu,True)
+            tf.config.experimental.set_visible_devices(gpu, 'GPU')
+            
+            logger.info(tf.config.list_physical_devices('GPU'))
+            logger.info(tf.config.list_logical_devices('GPU'))
             logger.info(f"using GPU {opt.device}- {gpu}")
-
-            tf.config.experimental.set_memory_growth(gpu, True)
-            device = f"/GPU:{opt.device}"
+            device = "/device:GPU:0" # set visible devices alr
         else:
             device = "/CPU:0"
             logger.info("Using /CPU:0")

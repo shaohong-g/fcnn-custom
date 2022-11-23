@@ -8,7 +8,7 @@ class config():
     roi_input_shape = (None, 4)
 
     # Anchors
-    anchor_box_sizes = [128, 256, 512] # anchor box scales # 8, 16, 32, 64, 
+    anchor_box_sizes = [64, 128, 256] #[128, 256, 512] # anchor box scales # 8, 16, 32, 64, 
     anchor_box_ratios = [[1, 1], [1, 2], [2, 1]] # anchor box ratios # , [1, 3], [3, 1]
     num_anchors = len(anchor_box_sizes) * len(anchor_box_ratios)
 
@@ -49,8 +49,8 @@ class config():
 
 
     # Training
-    num_epochs = 5
-    epoch_length = 20 # number of images (batch size) # 32892 6235 231
+    num_epochs = 300
+    epoch_length = 1000 # number of images (batch size) # 32892 6235 231
     nms_max_ROIs = 500 # Maximum number of region of interest (will be further diminish to num_rois)
     nms_overlap_thresh = 0.9 # Objects which have above said threshold to be removed to avoid choosing the same object for non_max_suppression
     classifier_regr_std = [8.0, 8.0, 4.0, 4.0] # [8.0, 8.0, 4.0, 4.0] 
