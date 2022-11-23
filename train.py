@@ -287,9 +287,9 @@ if __name__ == "__main__":
             gpu = gpus[opt.device]
             logger.info(f"using GPU {opt.device}- {gpu}")
 
-            tf.config.set_visible_devices(gpu, 'GPU')
+            tf.config.experimental.set_visible_devices(gpu, 'GPU')
             tf.config.experimental.set_memory_growth(gpu, True)
-            device = "/CPU:0"
+            device = f"/GPU:{opt.device}"
             logger.info(tf.config.list_physical_devices('GPU'))
         else:
             device = "/CPU:0"
