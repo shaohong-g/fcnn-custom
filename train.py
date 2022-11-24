@@ -76,9 +76,11 @@ def train(C, save_dir = None, logger= None):
     losses_for_epoch = [] 
 
     best_loss = np.Inf
+    best_loss_epoch = np.Inf
     start = time.time() # training start time
     save_record = []
-    best_loss_folder = os.path.join(save_dir, "weights/best")
+    best_loss_folder = os.path.join(save_dir, "weights/best_batch")
+    best_loss_epoch_folder = os.path.join(save_dir, "weights/best_epoch")
     last_loss_folder = os.path.join(save_dir, "weights/last")
 
     with std_out_err_redirect_tqdm( logger ) as outputstream:
@@ -97,10 +99,9 @@ def train(C, save_dir = None, logger= None):
                 pbar.set_description(f"Epoch {i + 1}/{num_epochs}-Batch {iter_num + 1}/{epoch_length}-Image {train_step+1}/{len(training_data)}")
                 X1, Y1, img_data = next(data_gen_train)
 
-
                 loss_rpn = model_rpn.train_on_batch(X1, Y1) # return Total_losses, loss_1 (rpn_loss_cls), loss_2 (rpn_reg_loss) ..
                 P_rpn = model_rpn.predict_on_batch(X1) # P_rpn[0] = classification (1,x,x,9), P_rpn[1] = regression coordinates (1,x,x,36)
-
+                
                 # note: process_rois converts from (x1,y1,x2,y2) to (x,y,w,h) format
                 rois = rpn_to_roi(P_rpn[0], P_rpn[1], C, use_regr=True)  # (None, 4) x1,y2,x1,y2
                 X2, Y2_1, Y2_2, IouS = process_rois(rois, img_data, C)
@@ -155,7 +156,7 @@ def train(C, save_dir = None, logger= None):
 
                 rpn_accuracy_rpn_monitor.append((len(selected_pos_samples))) # metric -rpn_count (batch)
                 loss_class = model_classifier.train_on_batch( [X1, X2[:, sel_samples, :]], [Y2_1[:, sel_samples, :], Y2_2[:, sel_samples, :]])
-
+                
 
                 ##################################
                 # Save Record and evaluate
@@ -205,6 +206,7 @@ def train(C, save_dir = None, logger= None):
 
                     logger.info(json.dumps(batch_data, cls = NumpyEncoder, indent=4))
                     logger.info(f"Best loss: {best_loss}")
+                    logger.debug(f"Memory {train_step}-{tf.config.experimental.get_memory_info('GPU:0')}")
 
 
                     losses = np.zeros((epoch_length, 5))
@@ -218,6 +220,10 @@ def train(C, save_dir = None, logger= None):
             train_step = 0
             save_record[-1]["mean_overlapping_bboxes"] = float(sum(rpn_accuracy_for_epoch)) / len(rpn_accuracy_for_epoch)
             save_record[-1]["loss"] = float(sum(losses_for_epoch)) / len(losses_for_epoch)
+
+            if best_loss_epoch > save_record[-1]["loss"]:
+                best_loss_epoch = save_record[-1]["loss"]
+                save_or_load_model([model_rpn, model_classifier, model_all], best_loss_epoch_folder, "model.h5", ["rpn_optimizer.npy", "classifier_optimizer.npy"], state = "save", optimizer = None)
 
             logger.info(f"Epoch {i+1} loss: {save_record[-1]['loss']}")
             logger.info(f"Epoch {i+1} mean_overlapping_bboxes: {save_record[-1]['mean_overlapping_bboxes']}")
@@ -282,8 +288,8 @@ if __name__ == "__main__":
             device = "/CPU:0"
             logger.info("Using /CPU:0")
         
-        with tf.device(device):
-            train(C, save_dir = save_dir, logger= logger)
+        # with tf.device(device):
+        train(C, save_dir = save_dir, logger= logger)
 
     except Exception as e:
         logger.info(traceback.format_exc())

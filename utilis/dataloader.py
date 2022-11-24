@@ -152,8 +152,10 @@ def get_new_img_size(height, width, min_size=600):
     -------
     new_height, new_width, multiplier
     """
-    multiplier = min_size / min(width, height)
-    return int(height * multiplier), int(width * multiplier), multiplier
+    multiplier_h = min_size / height
+    multiplier_w = min_size / width
+    multiplier = [multiplier_h, multiplier_w]
+    return int(height * multiplier_h), int(width * multiplier_w), multiplier
 
 def get_achorb_gt(input_size, img_data_aug, multiplier, C):
     """Get ground truth for anchors in relative to the bounding box ground truth 
@@ -217,10 +219,10 @@ def get_achorb_gt(input_size, img_data_aug, multiplier, C):
     # get the Gound Truth box coordinates, and resize (Input size) to account for image resizing
     gt_box = np.zeros((num_bbox, 4)) # shape = (num_bbox, bbox_coordinates)
     for index, bbox in enumerate(img_data_aug['bbox']):
-        gt_box[index, 0] = bbox[1] * multiplier #x1
-        gt_box[index, 1] = bbox[2] * multiplier #y1
-        gt_box[index, 2] = bbox[3] * multiplier #x2
-        gt_box[index, 3] = bbox[4] * multiplier #y2
+        gt_box[index, 0] = bbox[1] * multiplier[1] #x1
+        gt_box[index, 1] = bbox[2] * multiplier[0] #y1
+        gt_box[index, 2] = bbox[3] * multiplier[1] #x2
+        gt_box[index, 3] = bbox[4] * multiplier[0] #y2
 
     
     # rpn ground truth

@@ -287,10 +287,10 @@ def process_rois(R, img_data, C):
     resized_height, resized_width, multiplier = get_new_img_size(height, width, C.IM_SIZE) # input height and input width
     gta = np.zeros((len(bboxes), 4))
     for bbox_num, bbox in enumerate(bboxes):
-        gta[bbox_num, 0] = int(round(bbox[1] * multiplier / C.rpn_stride)) # x1_true for output
-        gta[bbox_num, 1] = int(round(bbox[2] * multiplier / C.rpn_stride)) # y1_true for output
-        gta[bbox_num, 2] = int(round(bbox[3] * multiplier / C.rpn_stride)) # x2_true for output
-        gta[bbox_num, 3] = int(round(bbox[4] * multiplier / C.rpn_stride)) # y2_true for output
+        gta[bbox_num, 0] = int(round(bbox[1] * multiplier[1] / C.rpn_stride)) # x1_true for output
+        gta[bbox_num, 1] = int(round(bbox[2] * multiplier[0] / C.rpn_stride)) # y1_true for output
+        gta[bbox_num, 2] = int(round(bbox[3] * multiplier[1] / C.rpn_stride)) # x2_true for output
+        gta[bbox_num, 3] = int(round(bbox[4] * multiplier[0] / C.rpn_stride)) # y2_true for output
 
 
     x_roi = []

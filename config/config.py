@@ -30,7 +30,7 @@ class config():
     augment = {
         'horizontal_flip':True, 'vertical_flip': True, 'rotate': True
     }
-    IM_SIZE = 600 # Input size shortest side (according to paper)
+    IM_SIZE = 750 # Input size shortest side (according to paper) -> change to same side due to graph execution to prevent OOM
 
     # RPN GT
     rpn_stride = 16 # Depending on your architecture: for e.g. how many max pooling layers etc
@@ -51,7 +51,7 @@ class config():
     # Training
     num_epochs = 300
     epoch_length = 1000 # number of images (batch size) # 32892 6235 231
-    nms_max_ROIs = 2000 # Maximum number of region of interest (will be further diminish to num_rois)
+    nms_max_ROIs = 600 # Maximum number of region of interest (will be further diminish to num_rois)
     nms_overlap_thresh = 0.9 # Objects which have above said threshold to be removed to avoid choosing the same object for non_max_suppression
     classifier_regr_std = [8.0, 8.0, 4.0, 4.0] # [8.0, 8.0, 4.0, 4.0] 
     classifier_min_overlap_iou = 0.3 # neg below this threshold
