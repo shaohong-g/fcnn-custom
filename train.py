@@ -119,6 +119,9 @@ def train(C, save_dir = None, logger= None):
                 neg_samples = neg_samples[0] if len(neg_samples) > 0 else []
                 pos_samples = pos_samples[0] if len(pos_samples) > 0 else [] 
 
+                if len(neg_samples) + len(pos_samples) < C.num_rois:
+                    logger.debug(f"neg: {len(neg_samples)}, pos: {len(pos_samples)}")
+                    
                 if C.num_rois > 1:
                     if len(pos_samples) < C.num_rois//2:
                         selected_pos_samples = pos_samples.tolist()
