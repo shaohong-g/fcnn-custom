@@ -119,9 +119,6 @@ def train(C, save_dir = None, logger= None):
                 neg_samples = neg_samples[0] if len(neg_samples) > 0 else []
                 pos_samples = pos_samples[0] if len(pos_samples) > 0 else [] 
 
-                if len(neg_samples) + len(pos_samples) < C.num_rois:
-                    logger.debug(f"neg: {len(neg_samples)}, pos: {len(pos_samples)}")
-                    
                 if C.num_rois > 1:
                     if len(pos_samples) < C.num_rois//2:
                         selected_pos_samples = pos_samples.tolist()
@@ -149,6 +146,12 @@ def train(C, save_dir = None, logger= None):
                         sel_samples = np.random.choice(neg_samples)
                     else:
                         sel_samples = np.random.choice(pos_samples) 
+
+                if len(sel_samples) != C.num_rois: # ignore as it will cause error for model_classifier
+                    logger.debug(f"total length: {len(sel_samples)}, pos: {len(selected_pos_samples)}, neg: {len(selected_neg_samples)}")
+                    rpn_accuracy_rpn_monitor.append(0)
+                    train_step += 1
+                    continue
 
                 rpn_accuracy_rpn_monitor.append((len(selected_pos_samples))) # metric -rpn_count (batch)
                 loss_class = model_classifier.train_on_batch( [X1, X2[:, sel_samples, :]], [Y2_1[:, sel_samples, :], Y2_2[:, sel_samples, :]])
