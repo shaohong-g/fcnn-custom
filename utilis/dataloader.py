@@ -442,7 +442,7 @@ def transform_output(y_rpn_overlap, y_is_box_valid, y_rpn_regr, img_data_aug, im
 
     return np.copy(img), [np.copy(y_rpn_cls), np.copy(y_rpn_regr)], img_data_aug
 
-def data_generator(train_data, C ):
+def data_generator(train_data, C , seed = 64):
     """ Data generator for training
     
     Required Packages: 
@@ -465,7 +465,7 @@ def data_generator(train_data, C ):
     """
     import random
 
-    random.shuffle(train_data)
+    random.Random(seed).shuffle(train_data) # random.shuffle(train_data)
 
     for each_image in train_data:
         try:
