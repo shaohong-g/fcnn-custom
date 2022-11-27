@@ -18,7 +18,40 @@ from utilis.metrics import ap_per_class, ConfusionMatrix
 # from metrics.BoundingBoxes import BoundingBoxes
 # from metrics.utils import *
 
-def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= True, v5_metric = False, train = False):
+def plot_bboxes(image, bboxes, gt_bbox, multiplier, out_file):
+    color_array = [(255,0,0), (0,0,255), (0,255,0), (0, 0, 0), (255,255,255)] # red, blue, green, black, white
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    text_scale = image.shape[1] / 1000
+
+    for x1, y1, x2, y2, prob, label in bboxes:
+
+        cv2.rectangle(image, (x1,y1), (x2,y2), color_array[0], 2)
+        textLabel = f'{label}: {round(100*prob,2)}%'
+        (retval, baseLine) = cv2.getTextSize(textLabel,cv2.FONT_HERSHEY_SIMPLEX,text_scale,1)
+
+        textOrg = (min(x1,x2) , min(y1,y2) + retval[1] )
+        cv2.rectangle(image, (min(x1,x2), min(y1,y2)), (min(x1,x2) + retval[0] , min(y1,y2) + retval[1]+baseLine), color_array[-1], -1)
+        cv2.putText(image, textLabel, textOrg, cv2.FONT_HERSHEY_SIMPLEX, text_scale, color_array[-2], 1)
+
+    for i in range(len(gt_bbox)):
+        x1 = int(gt_bbox[i][1] / multiplier[1])
+        y1 = int(gt_bbox[i][2] / multiplier[0])
+        x2 = int(gt_bbox[i][3] / multiplier[1])
+        y2 = int(gt_bbox[i][4] / multiplier[0])
+        cv2.rectangle(image, (x1,y1), (x2,y2), color_array[2], 2)
+        textLabel = f'{label}: GT'
+        (retval, baseLine) = cv2.getTextSize(textLabel,cv2.FONT_HERSHEY_SIMPLEX,text_scale,1)
+
+        textOrg = (max(x1,x2)- retval[0] , max(y1,y2)-baseLine )
+        cv2.rectangle(image, (max(x1,x2) - retval[0], max(y1,y2) - retval[1]-baseLine), (max(x1,x2) , max(y1,y2)), color_array[-2], -1)
+        cv2.putText(image, textLabel, textOrg, cv2.FONT_HERSHEY_SIMPLEX, text_scale, color_array[-1], 1)
+    
+    cv2.imwrite(out_file, image)
+
+
+
+def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= True, v5_metric = False, train = False, sample_rate = 100):
     """
     
     """
@@ -129,6 +162,10 @@ def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= 
         if save_txt: plabel[-1]["plabels"] = all_dets
         if plots:
             confusion_matrix.process_batch(detections = np.array(all_dets), labels= np.array(gt_bbox), classes = classes)
+            os.makedirs(os.path.join(save_dir, "sample"), exist_ok=True)
+            if (counter + 1) % sample_rate == 0:
+                plot_bboxes(img_original, all_dets, gt_bbox, multiplier, os.path.join(save_dir, "sample", os.path.basename(image)))
+
         stats.append([np.array(correct), np.array(conf), np.array(pcls), np.array(tcls)])
 
         logger.info(f"Tested {counter + 1}/{total_counter}: {image} - {len(conf)} objects, Elapsed Time: {time.time() - start_image:.2f}s")
@@ -159,6 +196,7 @@ def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= 
             json.dump(plabel, f, indent=4, cls= NumpyEncoder)
     if plots:
         confusion_matrix.plot(save_dir=save_dir, names=list(names.values()))
+        
 
     logger.info(f"Testing Completed! Fail to detect: {total_counter - counter -1} images,  Elapsed Time: {time.time() - start:.2f}s")
     
@@ -178,6 +216,7 @@ if __name__ == "__main__":
     parser.add_argument('--hyp', type=str, required=True, help='File location of where the config (hyp.json) file is saved (relative to this file)')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='Confidence level for classifier')
     parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
+    parser.add_argument('--sample-rate', type=int, default=100, help='Save samples')
     parser.add_argument('--logfile', type=str, default='test.log', help='Log file')
     opt = parser.parse_args()
 
@@ -208,4 +247,4 @@ if __name__ == "__main__":
     C.bbox_threshold = opt.conf_thres
     C.nms_dets = opt.iou_thres
 
-    test(save_dir, model_weight, logger, annotations, C, save_txt= opt.save_txt, plots= True, v5_metric = False, train = False)
+    test(save_dir, model_weight, logger, annotations, C, save_txt= opt.save_txt, plots= True, v5_metric = False, train = False, sample_rate = opt.sample_rate)
