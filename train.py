@@ -269,7 +269,7 @@ if __name__ == "__main__":
     # Logger
     logfile = os.path.join(save_dir, opt.logfile)
     logger = get_logger(production=False, fixed_logfile=logfile)
-    logger.info(f"{opt.kwargs}") # log the settings
+    logger.info(f"{vars(opt)}") # log the settings
 
     # GPU/CPU (up to 4 gpus)
     assert opt.device in [-1,0,1,2,3], "Please check device argument. Valid values: [-1,0,1,2,3]"

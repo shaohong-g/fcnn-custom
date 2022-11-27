@@ -4,6 +4,7 @@ import cv2
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import traceback
 import tensorflow as tf
 # tf.config.run_functions_eagerly(True)
 # print(tf.config.list_physical_devices('GPU'))
@@ -12,7 +13,7 @@ from config.config import config as C
 from model.model import get_faster_rcnn_model
 from utilis.general import get_logger, get_ious, NumpyEncoder
 from utilis.dataloader import get_data, get_new_img_size, transform_image_vector
-from utilis.fcnn import rpn_to_roi, apply_regr, non_max_suppression_fast, fcnn_get_results
+from utilis.fcnn import non_max_suppression_fast, fcnn_get_results
 from utilis.metrics import ap_per_class, ConfusionMatrix
 # from metrics.BoundingBox import BoundingBox
 # from metrics.BoundingBoxes import BoundingBoxes
@@ -247,4 +248,25 @@ if __name__ == "__main__":
     C.bbox_threshold = opt.conf_thres
     C.nms_dets = opt.iou_thres
 
-    test(save_dir, model_weight, logger, annotations, C, save_txt= opt.save_txt, plots= True, v5_metric = False, train = False, sample_rate = opt.sample_rate)
+    # GPU/CPU (up to 4 gpus)
+    assert opt.device in [-1,0,1,2,3], "Please check device argument. Valid values: [-1,0,1,2,3]"
+    
+    try:
+        if opt.device != -1:
+            gpus= tf.config.list_physical_devices('GPU')
+            gpu = gpus[opt.device]
+            tf.config.experimental.set_memory_growth(gpu,True)
+            tf.config.experimental.set_visible_devices(gpu, 'GPU')
+            
+            logger.info(tf.config.list_physical_devices('GPU'))
+            logger.info(tf.config.list_logical_devices('GPU'))
+            logger.info(f"using GPU {opt.device}- {gpu}")
+            device = "/device:GPU:0" # set visible devices alr
+        else:
+            device = "/CPU:0"
+            logger.info("Using /CPU:0")
+        
+        with tf.device(device):
+            test(save_dir, model_weight, logger, annotations, C, save_txt= opt.save_txt, plots= True, v5_metric = False, train = False, sample_rate = opt.sample_rate)
+    except Exception as e:
+        logger.info(traceback.format_exc())
