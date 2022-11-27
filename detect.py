@@ -100,7 +100,6 @@ def test(source, save_dir, model_weight, logger, C, save_txt= None, acceptable_e
     if os.path.isdir(source):
         detect_data = list(filter(lambda x: x.endswith(acceptable_extensions), os.listdir(source) ))
         detect_data = [os.path.join(source, x) for x in detect_data]
-        detect_data = detect_data[:50]
     elif source.endswith(".txt"): # txt file
         with open(source, 'r') as f:
             detect_data = f.readlines()
@@ -196,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=int, default='-1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu (-1)')
     parser.add_argument('--weights', type=str, default='./model.h5', help='File location of where the weight file is saved (relative to this file)')
     parser.add_argument('--hyp', type=str, required=True, help='File location of where the config (hyp.json) file is saved (relative to this file)')
-    parser.add_argument('--conf-thres', type=float, default=0.5, help='Confidence level for classifier')
+    parser.add_argument('--conf-thres', type=float, default=0.25, help='Confidence level for classifier')
     parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
     parser.add_argument('--logfile', type=str, default='test.log', help='Log file')
     opt = parser.parse_args()
