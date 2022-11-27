@@ -12,69 +12,11 @@ from config.config import config as C
 from model.model import get_faster_rcnn_model
 from utilis.general import get_logger, get_ious, NumpyEncoder
 from utilis.dataloader import get_data, get_new_img_size, transform_image_vector
-from utilis.fcnn import rpn_to_roi, apply_regr, non_max_suppression_fast
+from utilis.fcnn import rpn_to_roi, apply_regr, non_max_suppression_fast, fcnn_get_results
 from utilis.metrics import ap_per_class, ConfusionMatrix
 # from metrics.BoundingBox import BoundingBox
 # from metrics.BoundingBoxes import BoundingBoxes
 # from metrics.utils import *
-
-
-def fcnn_get_results(img, model_rpn, model_classifier, classes, C):
-    # Fit to model
-    # First stage detector for RPN
-    Y1, Y2, fmap = model_rpn.predict_on_batch(img)
-    R = rpn_to_roi(Y1, Y2, C, use_regr=True)  # (nms_max_ROIs, 4)
-    R[:, 2] -= R[:, 0]
-    R[:, 3] -= R[:, 1]
-
-    # Second stage detector for classification
-    bboxes = {}
-    probs = {}
-    for jk in range(R.shape[0]//C.num_rois + 1):
-        ROIs = np.expand_dims(R[C.num_rois*jk:C.num_rois*(jk+1), :], axis=0) # (1, 300, 4)
-        
-        if ROIs.shape[1] == 0:
-            break
-
-        if jk == R.shape[0]//C.num_rois:
-            #pad R
-            curr_shape = ROIs.shape
-            target_shape = (curr_shape[0],C.num_rois,curr_shape[2])
-            ROIs_padded = np.zeros(target_shape).astype(ROIs.dtype)
-            ROIs_padded[:, :curr_shape[1], :] = ROIs
-            ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
-            ROIs = ROIs_padded
-        
-        [P_cls, P_regr] = model_classifier.predict_on_batch([fmap, ROIs]) # (1, 300, 3) (1, 300, 8)
-
-        # Calculate bboxes coordinates on resized image
-        for ii in range(P_cls.shape[1]):
-            # Ignore 'bg' class (P < threshold or last index)
-            if np.max(P_cls[0, ii, :]) < C.bbox_threshold or np.argmax(P_cls[0, ii, :]) == (P_cls.shape[2] - 1):
-                continue
-            
-            cls_num = np.argmax(P_cls[0, ii, :])
-            cls_name = classes[cls_num]
-
-            if cls_name not in bboxes:
-                bboxes[cls_name] = []
-                probs[cls_name] = []
-
-            (x, y, w, h) = ROIs[0, ii, :]
-
-            try:
-                (tx, ty, tw, th) = P_regr[0, ii, 4*cls_num:4*(cls_num+1)]
-                tx /= C.classifier_regr_std[0]
-                ty /= C.classifier_regr_std[1]
-                tw /= C.classifier_regr_std[2]
-                th /= C.classifier_regr_std[3]
-                x, y, w, h = apply_regr(x, y, w, h, tx, ty, tw, th)
-            except:
-                pass
-            bboxes[cls_name].append([C.rpn_stride*x, C.rpn_stride*y, C.rpn_stride*(x+w), C.rpn_stride*(y+h)])
-            probs[cls_name].append(np.max(P_cls[0, ii, :]))
-    return bboxes, probs
-    
 
 def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= True, v5_metric = False, train = False):
     """
@@ -94,7 +36,6 @@ def test(save_dir, model_weight, logger, annotations, C, save_txt= None, plots= 
 
     # testing_data and classes
     testing_data = get_data(annotations)
-    testing_data = testing_data[:500]
     classes = C.classes
     names = {i: classes[i] for i in range(len(classes))}
     names.pop(len(classes)-1, None) # pop background
