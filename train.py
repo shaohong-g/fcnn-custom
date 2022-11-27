@@ -54,7 +54,7 @@ def train(C, save_dir = None, logger= None):
     classes = C.classes
 
     # Model
-    model_rpn, model_classifier, model_all = get_faster_rcnn_model(C = C, save_plot = False, base_SOTA = "VGG16", start = None, end = None, training = True) #, save_plot='model_all' # train last 6 layers
+    model_rpn, model_classifier, model_all = get_faster_rcnn_model(C = C, save_plot = False, base_SOTA = C.backbone, start = None, end = None, training = True) #, save_plot='model_all' # train last 6 layers
     
     optimizer_rpn = Adam(learning_rate=C.optimizer_lr)
     optimizer_classifier = Adam(learning_rate=C.optimizer_lr)
@@ -269,6 +269,7 @@ if __name__ == "__main__":
     # Logger
     logfile = os.path.join(save_dir, opt.logfile)
     logger = get_logger(production=False, fixed_logfile=logfile)
+    logger.info(f"{opt.kwargs}") # log the settings
 
     # GPU/CPU (up to 4 gpus)
     assert opt.device in [-1,0,1,2,3], "Please check device argument. Valid values: [-1,0,1,2,3]"
@@ -288,8 +289,8 @@ if __name__ == "__main__":
             device = "/CPU:0"
             logger.info("Using /CPU:0")
         
-        # with tf.device(device):
-        train(C, save_dir = save_dir, logger= logger)
+        with tf.device(device):
+            train(C, save_dir = save_dir, logger= logger)
 
     except Exception as e:
         logger.info(traceback.format_exc())

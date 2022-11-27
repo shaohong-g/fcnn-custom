@@ -7,3 +7,4 @@ opencv-python
 fiftyone
 pydot
 ipython
+seaborn

@@ -13,6 +13,7 @@ class config():
     num_anchors = len(anchor_box_sizes) * len(anchor_box_ratios)
 
     # Model - ALL
+    backbone = "VGG16"
     epsilon = 1e-4  # loss
     optimizer_lr = 1e-5 #5 # learning rate
 

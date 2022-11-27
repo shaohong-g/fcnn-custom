@@ -132,6 +132,14 @@ def calculate_iou(ground_truth, pred, only_iou = True):
     # print(gt_height * gt_width, pd_height * pd_width, area_of_intersection, area_of_union, iou)
     return iou if only_iou else (iou,ix1,iy1,ix2,iy2)
 
+def get_ious(ground_truth_arr, pred):
+    result = []
+    for i in range(len(ground_truth_arr)):
+        iou = calculate_iou(np.array([ground_truth_arr[i][1], ground_truth_arr[i][2],ground_truth_arr[i][3],ground_truth_arr[i][4]]).astype(np.float), pred)
+        result.append(iou)
+    result = np.array(result)
+
+    return result, np.argsort(-result) #highest to lowest index
 
 
 def addLoggingLevel(levelName, levelNum, methodName=None):

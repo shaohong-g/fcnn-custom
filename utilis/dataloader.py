@@ -150,7 +150,7 @@ def get_new_img_size(height, width, min_size=600):
 
     Returns
     -------
-    new_height, new_width, multiplier
+    new_height, new_width, multiplier = [multiplier_h, multiplier_w]
     """
     multiplier_h = min_size / height
     multiplier_w = min_size / width

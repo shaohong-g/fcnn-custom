@@ -1,8 +1,12 @@
 venv/
+metrics/
 **/*__pycache__/
+Untitled.ipynb
 
 dataset/
-runs/train/*
+runs/**/*
 train_.py
+test_.py
+Object-Detection-Metrics/
 # Jupyter Notebook
 .ipynb_checkpoints
