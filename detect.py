@@ -197,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument('--hyp', type=str, required=True, help='File location of where the config (hyp.json) file is saved (relative to this file)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='Confidence level for classifier')
     parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
-    parser.add_argument('--logfile', type=str, default='test.log', help='Log file')
+    parser.add_argument('--logfile', type=str, default='detect.log', help='Log file')
     opt = parser.parse_args()
 
     # Create save_dir
