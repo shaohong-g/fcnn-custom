@@ -7,6 +7,7 @@ dataset/
 runs/**/*
 train_.py
 test_.py
+dummy.py
 Object-Detection-Metrics/
 # Jupyter Notebook
 .ipynb_checkpoints

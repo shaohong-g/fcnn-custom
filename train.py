@@ -24,10 +24,17 @@ from utilis.general import get_logger, NumpyEncoder, std_out_err_redirect_tqdm, 
 
 
 def save_results(c, add_arr,save_record, yml_file, json_file):
-    save_dict = {i: vars(C)[i] for i in vars(c) if not i.startswith('__')}
-    c.epoch_num = add_arr[0]
+
+    if not hasattr(c, 'epoch_left'):
+        c.epoch_left = c.num_epochs
+    c.epoch_left -= add_arr[0]
     c.train_step = add_arr[1]
     c.best_loss = add_arr[2]
+
+    if add_arr[3] is not None:
+        c.best_loss_epoch = add_arr[3]
+
+    save_dict = {i: vars(c)[i] for i in vars(c) if not i.startswith('__')}
 
     with open(json_file, 'w') as f:
         json.dump(save_record, f, indent=4, cls= NumpyEncoder)
@@ -38,7 +45,7 @@ def save_results(c, add_arr,save_record, yml_file, json_file):
     #     documents = yaml.dump(save_dict, file)
     
 
-def train(C, save_dir = None, logger= None):
+def train(C, save_dir = None, logger= None, resume = False):
     logger.info("Setting up Training models and dataloader...")
     # File and directories
     train_file = os.path.realpath(C.train_file)
@@ -59,33 +66,39 @@ def train(C, save_dir = None, logger= None):
     optimizer_rpn = Adam(learning_rate=C.optimizer_lr)
     optimizer_classifier = Adam(learning_rate=C.optimizer_lr)
 
+    if resume:
+        save_or_load_model(model = model_rpn, folder = os.path.join(save_dir, "weights/last"), model_weights_file = "model.h5", optimizer_file = "rpn_optimizer.npy", state = "load", optimizer = optimizer_rpn)
+        save_or_load_model(model = model_classifier, folder = os.path.join(save_dir, "weights/last"), model_weights_file = "model.h5", optimizer_file = "classifier_optimizer.npy", state = "load", optimizer = optimizer_classifier)
+
     model_rpn.compile(optimizer=optimizer_rpn, loss=[rpn_loss_cls(C.num_anchors, lambda_rpn_class = C.lambda_rpn_class, epsilon = C.epsilon), rpn_loss_regr(C.num_anchors, lambda_rpn_regr = C.lambda_rpn_regr, epsilon = C.epsilon)])
     model_classifier.compile(optimizer=optimizer_classifier, loss=[class_loss_cls(lambda_cls_class = C.lambda_cls_class), class_loss_regr(len(C.classes)-1, lambda_cls_regr = C.lambda_cls_regr, epsilon = C.epsilon)], metrics={'dense_class_{}'.format(len(C.classes)): 'accuracy'})
     model_all.compile(optimizer='sgd', loss='mae') # just to get the weights for the whole model, no training is involved for this model
     
 
     # Training
-    logger.info("Start Training...")
-    num_epochs = C.num_epochs
+    num_epochs = C.num_epochs if not hasattr(C, 'epoch_left') else C.epoch_left
     epoch_length = C.epoch_length # aka batch size, number of images per epoch
     iter_num = 0 # counter for epoch length
-    train_step = 0
+    train_step = 0 if not hasattr(C, 'train_step') else C.train_step
     assert epoch_length <= len(training_data), "Epoch Length must be less than len(training-data)!"
 
     rpn_accuracy_for_epoch = [] # number of positive samples per image per epoch
     losses_for_epoch = [] 
 
-    best_loss = np.Inf
-    best_loss_epoch = np.Inf
+    best_loss = np.Inf if not hasattr(C, 'best_loss') else C.best_loss
+    best_loss_epoch = np.Inf if not hasattr(C, 'best_loss_epoch') else C.best_loss_epoch
     start = time.time() # training start time
     save_record = []
     best_loss_folder = os.path.join(save_dir, "weights/best_batch")
     best_loss_epoch_folder = os.path.join(save_dir, "weights/best_epoch")
-    last_loss_folder = os.path.join(save_dir, "weights/last")
+    last_loss_folder = os.path.join(save_dir, "weights/last") # change in line 67 as well (resume weights)
 
     with std_out_err_redirect_tqdm( logger ) as outputstream:
         for i in range(num_epochs):
-            data_gen_train = data_generator(training_data, C) # Generator for training data
+            
+            logger.info(f"Start training epoch from image idx:{train_step}...")
+            data_gen_train = data_generator(training_data, C, train_step) # Generator for training data
+            
             pbar = tqdm(total=epoch_length, unit='images', file=outputstream, dynamic_ncols=True) #, position=0, leave=True
             losses = np.zeros((epoch_length, 5)) # 4 losses and 1 accuracy for each epoch
             rpn_accuracy_rpn_monitor = [] # number of positive samples per image per batch
@@ -202,11 +215,11 @@ def train(C, save_dir = None, logger= None):
                     # save_record[-1]["losses_for_epoch"] = losses_for_epoch
                     save_record[-1]["best_loss"] = best_loss
 
-                    save_results(C, [i, train_step, best_loss],save_record, os.path.join(save_dir, "hyp.json"), os.path.join(save_dir, "results.json"))
+                    save_results(C, [i, train_step, best_loss, None],save_record, os.path.join(save_dir, "hyp.json"), os.path.join(save_dir, "results.json"))
 
                     logger.info(json.dumps(batch_data, cls = NumpyEncoder, indent=4))
                     logger.info(f"Best loss: {best_loss}")
-                    logger.debug(f"Memory {train_step}-{tf.config.experimental.get_memory_info('GPU:0')}")
+                    # logger.debug(f"Memory {train_step}-{tf.config.experimental.get_memory_info('GPU:0')}")
 
 
                     losses = np.zeros((epoch_length, 5))
@@ -228,7 +241,7 @@ def train(C, save_dir = None, logger= None):
             logger.info(f"Epoch {i+1} loss: {save_record[-1]['loss']}")
             logger.info(f"Epoch {i+1} mean_overlapping_bboxes: {save_record[-1]['mean_overlapping_bboxes']}")
 
-            save_results(C, [i + 1, train_step, best_loss],save_record, os.path.join(save_dir, "hyp.json"), os.path.join(save_dir, "results.json"))
+            save_results(C, [i + 1, train_step, best_loss, best_loss_epoch],save_record, os.path.join(save_dir, "hyp.json"), os.path.join(save_dir, "results.json"))
 
     logger.info(f"Training Completed! Elapsed Time: {time.time() - start:.2f}s")
 
@@ -253,8 +266,8 @@ if __name__ == "__main__":
     parser.add_argument('--resume', action='store_true', help='Resume training as per name')
     parser.add_argument('--name', type=str, default='exp', help='Experiment name')
     parser.add_argument('--device', type=int, default='-1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu (-1)')
-    parser.add_argument('--epoch_length', type=int, help='AKA batch size')
-    parser.add_argument('--num_epochs', type=int, help='Number of epoches')
+    parser.add_argument('--epoch-length', type=int, help='AKA batch size')
+    parser.add_argument('--num-epochs', type=int, help='Number of epoches')
     parser.add_argument('--logfile', type=str, default='train.log', help='Log file')
     opt = parser.parse_args()
 
@@ -271,9 +284,24 @@ if __name__ == "__main__":
     logger = get_logger(production=False, fixed_logfile=logfile)
     logger.info(f"{vars(opt)}") # log the settings
 
+    # Resume
+    if opt.resume and os.path.exists(os.path.join(save_dir, "hyp.json")):
+        with open(os.path.join(save_dir, "hyp.json"), 'r') as f:
+            content = json.load(f)
+        for key, value in content.items():
+            setattr(C, key, value)
+        logger.info(f"Resume config: {os.path.join(save_dir, 'hyp.json')}")
+    elif opt.resume:
+        raise Exception("This is a complete new run! Cannot resume")
+
+    # epoch length and num epochs
+    if opt.num_epochs is not None: C.num_epochs = opt.num_epochs
+    if opt.epoch_length is not None: C.epoch_length = opt.epoch_length
+
+
     # GPU/CPU (up to 4 gpus)
     assert opt.device in [-1,0,1,2,3], "Please check device argument. Valid values: [-1,0,1,2,3]"
-    
+
     try:
         if opt.device != -1:
             gpus= tf.config.list_physical_devices('GPU')
@@ -290,7 +318,7 @@ if __name__ == "__main__":
             logger.info("Using /CPU:0")
         
         with tf.device(device):
-            train(C, save_dir = save_dir, logger= logger)
+            train(C, save_dir = save_dir, logger= logger, resume = opt.resume)
 
     except Exception as e:
         logger.info(traceback.format_exc())
