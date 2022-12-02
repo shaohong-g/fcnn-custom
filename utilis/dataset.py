@@ -93,7 +93,10 @@ def process_openimages_format(model_type="yolo", main_dir = os.path.join(os.path
         label_count_normalized_df = df["Label"].value_counts(normalize=True)
         image_count_df = df.groupby("Label")['ImageID'].agg(['nunique'])
         df_stats = pd.concat([label_count_df,label_count_normalized_df, image_count_df], axis = 1).reset_index()
-        df_stats = df_stats.set_axis(["class", "label_count", 'label_count_normalized', 'image_count'], axis=1, copy=False)
+        try:
+            df_stats = df_stats.set_axis(["class", "label_count", 'label_count_normalized', 'image_count'], axis=1, copy=False) # New in version 1.5.0.
+        except:
+            df_stats.set_axis(["class", "label_count", 'label_count_normalized', 'image_count'], axis=1, inplace=True) # Deprecated since version 1.5.0.
         df_stats.to_json(os.path.join(main_dir, each_split, 'label_stats.json'), orient='records') #, lines=True
         display(df_stats)
 
@@ -131,8 +134,8 @@ def process_openimages_format(model_type="yolo", main_dir = os.path.join(os.path
                 if model_type == "yolo":
                     x_center = ((x2 + x1) / 2) / w
                     y_center = ((y2 + y1) / 2) / h
-                    w_bbox = ((x2 - x1) / 2) / w
-                    h_bbox = ((y2 - y1) / 2) / h
+                    w_bbox = ((x2 - x1)) / w
+                    h_bbox = ((y2 - y1)) / h
 
                     labels_txt[image].append(f"{classes.index(row['Label'])} {x_center} {y_center} {w_bbox} {h_bbox}")
                 elif model_type == "fcnn-custom":
@@ -148,9 +151,11 @@ def process_openimages_format(model_type="yolo", main_dir = os.path.join(os.path
             for key, value in labels_txt.items():
                 with open(os.path.join(label_dir, f"{key}.txt"), "w") as f:
                     f.write("\n".join(value))
+            print(f"Save {len(labels_txt)} image labels!")
         elif model_type == "fcnn-custom":
             with open(os.path.join(main_dir, f"{each_split}_labels.json"), 'w') as f:
                 json.dump(labels_arr, f , indent=4)
+            print(f"Save {len(labels_arr)} image labels!")
 
         print(f"Process {each_split}: {len(image_list)} - {(time.time() - split_start):.2f}s")
 
