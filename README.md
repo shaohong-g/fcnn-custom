@@ -117,6 +117,11 @@ Arguments:
 python detect.py --device -1 --name exp1 --weights ./runs/train/exp1/model.h5 --hyp ./runs/train/exp1/hyp.json --source ./dataset/open-images-v6/test/images --conf-thres 0.001 --iou-thres 0.65
 ```
 
+## Codes Review
+Detailed explaination of codes can be found in [codes.md](./codes.md)
+
+
+
 ## Demo Result
 Works relative well on large bounding boxes. May need to configure and and change the loss function to cater to the smaller bounding boxes. 
 - Training: do refer to the training log `static/train.log` for more details

@@ -1,0 +1,2 @@
+python utilis/dataset.py --download --dataset open-images-v6 --classes Motorcycle Car Truck --splits train --max-samples 10000 --save-dir ./dataset &&
+python utilis/dataset.py --download --dataset open-images-v6 --classes Motorcycle Car Truck --splits validation test --max-samples 3000 --save-dir ./dataset

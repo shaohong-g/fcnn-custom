@@ -1,1 +1,0 @@
-python dataset.py --process --dataset open-images-v6 --classes Motorcycle Car Truck --save-dir ./dataset --model fcnn-custom
