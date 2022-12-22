@@ -137,6 +137,30 @@ Faster-RCNN consists of 2 models - RPN model and detector model. Below image is 
 
 ![Overall architecture - VGG16](./model/VGG16/train_model_all.png)
 
+## 2.3 Simple Walkthough
+Both the RPN model and the detector model share a common backbone to retrieve the feature maps. During training, we will be training the RPN model and the detector model separately. Since the input of the detector model rely heavily on the results of the RPN model, the backbone will be trained on both models to speed up the training process.
 
+However, during testing/inference, the detector model will **no longer** need to pass through the backbone again. Instead, the feature maps will be retrieved from the output of the RPN model. 
 
+## 3. Training (Brief)
+1. Load Data via Dataloader from part 1 and load the required models from part 2
+2. For each image, get the probabilities (whether there is an object) and regression coordinates from the RPN model.
+3. From the output of (2), get the ROIs and limit the number by applying NMS (Non-max suppression)
+4. Process the ROIs by using the ground-truth from (1). (Figure out which class label is best represented in the ROI and the regression coordinates relative to the ground-truth)
+5. Properly sample the result to get selected_pos_samples and selected_neg_samples
+6. Train detector model by giving image and ROIs as inputs and y_labels and regression coordinates as output
 
+## 4. Testing/Inference (Brief)
+1. Load Data via Dataloader from part 1 and load the required models from part 2
+2. For each image, get the feature map, probabilities (whether there is an object) and regression coordinates from the RPN model.
+3. From the output of (2), get the ROIs and limit the number by applying NMS (Non-max suppression)
+4. Pass the feature map and ROIs to the detector models.
+5. Ignore 'BG' class labels and probabilities that is less than the confidence level that we give.
+6. Using the regression coordinates from the output of (4), get the exact xyxy coordinates as well the the labels assoiciated.
+7. From each class label, apply NMS (Non-max suppression) to prevent similar bounding boxes.
+
+## 5. Metrics
+Check [metrics.py](./utilis/metrics.py) for more details.
+- mAP
+- Confusion Metrics
+- FPS

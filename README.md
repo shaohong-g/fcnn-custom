@@ -72,7 +72,7 @@ python train.py --name exp1 --device -1 --epoch-length 1000 --num-epochs 300
 ```
 
 After training, folders and file will be create as follows:
-```
+```sh
 .
 ├── runs     
     └── train 
@@ -103,6 +103,24 @@ Arguments:
 python test.py --device -1 --save-txt --name exp1 --weights ./runs/train/exp1/model.h5 --annotations ./dataset/open-images-v6/validation_labels.json --hyp ./runs/train/exp1/hyp.json --sample-rate 10 --conf-thres 0.001 --iou-thres 0.65
 ```
 
+After testing, folders and file will be create as follows:
+```sh
+.
+├── runs     
+    └── test 
+        └── exp1  
+            ├── sample
+            |   └── images.jpg                  # testing images containing pred and GT bounding boxes
+            ├── confusion_matrix_abs.png        # Confusion Matrix with absolute figure
+            ├── confusion_matrix_normalize.png  # Confusion Matrix with percentage
+            ├── F1_curve.png                    # F1
+            ├── P_curve.png                     # Precision
+            ├── PR_curve.png                    # Precision-recall
+            ├── R_curve.png                     # Recall
+            ├── plabels.json                    # Predicted bounding boxes
+            └── test.log                        # log file
+```
+
 ### Inference
 Arguments:
 - name: name of the testing instance
@@ -117,9 +135,18 @@ Arguments:
 python detect.py --device -1 --name exp1 --weights ./runs/train/exp1/model.h5 --hyp ./runs/train/exp1/hyp.json --source ./dataset/open-images-v6/test/images --conf-thres 0.001 --iou-thres 0.65
 ```
 
+After inference, folders and file will be create as follows:
+```sh
+.
+├── runs     
+    └── detect 
+        └── exp1  
+            ├── video/images    # video or image files
+            └── detect.log      # log file
+```
+
 ## Codes Review
 Detailed explaination of codes can be found in [codes.md](./codes.md)
-
 
 
 ## Demo Result
